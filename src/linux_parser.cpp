@@ -14,7 +14,6 @@ using std::string;
 using std::to_string;
 using std::vector;
 
-// DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
   string line;
   string key;
@@ -37,7 +36,6 @@ string LinuxParser::OperatingSystem() {
   return value;
 }
 
-// DONE: An example of how to read data from the filesystem
 string LinuxParser::Kernel() {
   string os, kernel, version;
   string line;
@@ -50,7 +48,6 @@ string LinuxParser::Kernel() {
   return kernel;
 }
 
-// BONUS: Update this to use std::filesystem
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
   DIR* directory = opendir(kProcDirectory.c_str());
@@ -70,7 +67,6 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
 float LinuxParser::MemoryUtilization() {
   string line;
   string key;
@@ -94,7 +90,6 @@ float LinuxParser::MemoryUtilization() {
   return (memtotal - memfree) / memtotal;
 }
 
-// TODO: Read and return the system uptime
 long LinuxParser::UpTime() {
   string line;
   long sysUptimeValue;
@@ -110,20 +105,14 @@ long LinuxParser::UpTime() {
   return sysUptimeValue;
 }
 
-// TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
 
-// TODO: Read and return the number of active jiffies for a PID
-// REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
 
-// TODO: Read and return the number of active jiffies for the system
 long LinuxParser::ActiveJiffies() { return 0; }
 
-// TODO: Read and return the number of idle jiffies for the system
 long LinuxParser::IdleJiffies() { return 0; }
 
-// TODO: Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() {
   string line;
   string key;
@@ -292,24 +281,34 @@ long LinuxParser::UpTime(int pid) {
   }
   return (UpTime() - processTime) / sysconf(_SC_CLK_TCK);
 }
-float LinuxParser::CpuUtilization(int pid) {
+
+float LinuxParser::CpuUtil(int pid) {
   string line;
-  float total{0};
+  int total{0};
   float seconds;
-  float cpuUsage;
+  float cpuUsage{0.0};
+  int count = 0;
+
+  float hertz = sysconf(_SC_CLK_TCK);
 
   vector<string> sysUptimeVect{};
 
   std::ifstream pCpuSystemStream(LinuxParser::kProcDirectory + to_string(pid) +
                                  LinuxParser::kStatFilename);
+
   if (pCpuSystemStream.is_open()) {
     while (std::getline(pCpuSystemStream, line)) {
       std::stringstream lineStream(line);
-      sysUptimeVect.push_back(line);
-      total = line[13] + line[14] + line[15] + line[16] + line[21];
-      seconds = LinuxParser::UpTime(pid) - (line[22] / sysconf(_SC_CLK_TCK));
+      while (count <= 22) {
+        sysUptimeVect.push_back(line);
+        count++;
+      }
 
-      cpuUsage = 100 * ((total / sysconf(_SC_CLK_TCK)) / seconds);
+      total = LinuxParser::UpTime(pid) + stoi(sysUptimeVect[14]) +
+              stoi(sysUptimeVect[15]) + stoi(sysUptimeVect[16]) +
+              stoi(sysUptimeVect[21]);
+      seconds = LinuxParser::UpTime() - (stof(sysUptimeVect[22]) / hertz);
+      cpuUsage = 100 * ((total / hertz) / seconds);
     }
   }
 

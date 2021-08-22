@@ -19,7 +19,7 @@ Process::Process(int pid) {
   ram_ = LinuxParser::Ram(pid_);
   user_ = LinuxParser::User(pid_);
   upTime_ = LinuxParser::UpTime(pid_);
-  cpuUtilization_ = LinuxParser::CpuUtilization(pid_);
+  cpuUtilization_ = LinuxParser::CpuUtil(pid_);
 }
 
 int Process::Pid() { return pid_; }
