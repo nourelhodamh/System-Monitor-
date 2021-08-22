@@ -109,9 +109,54 @@ long LinuxParser::Jiffies() { return 0; }
 
 long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
 
-long LinuxParser::ActiveJiffies() { return 0; }
+long LinuxParser::ActiveJiffies() {
+  string line;
+  string key;
+  string value;
+  long temp;
+  long userVal, niceVal, systemVal, irqVal, softIrqVal, stealVal;
+  long active;
 
-long LinuxParser::IdleJiffies() { return 0; }
+  std::ifstream utilStream(LinuxParser::kProcDirectory +
+                           LinuxParser::kStatFilename);
+  if (utilStream.is_open()) {
+    while (std::getline(utilStream, line)) {
+      std::stringstream lineStream(line);
+      while (lineStream >> key >> value) {
+        if (key == "cpu") {
+          lineStream >> userVal >> niceVal >> systemVal >> temp >> temp >>
+              irqVal >> softIrqVal >> stealVal;
+        }
+      }
+      active = userVal + niceVal + systemVal + irqVal + softIrqVal + stealVal;
+    }
+  }
+  return active;
+}
+
+long LinuxParser::IdleJiffies() {
+  string line;
+  string key;
+  string value;
+  long temp;
+  long idleVal, iowaitVal;
+  long idle;
+
+  std::ifstream utilStream(LinuxParser::kProcDirectory +
+                           LinuxParser::kStatFilename);
+  if (utilStream.is_open()) {
+    while (std::getline(utilStream, line)) {
+      std::stringstream lineStream(line);
+      while (lineStream >> key >> value) {
+        if (key == "cpu") {
+          lineStream >> temp >> temp >> temp >> idleVal >> iowaitVal;
+        }
+      }
+      idle = iowaitVal + idleVal;
+    }
+  }
+  return idle;
+}
 
 vector<string> LinuxParser::CpuUtilization() {
   string line;
@@ -284,7 +329,7 @@ long LinuxParser::UpTime(int pid) {
 
 float LinuxParser::CpuUtil(int pid) {
   string line;
-  int total{0};
+  float total{0.0};
   float seconds;
   float cpuUsage{0.0};
   int count = 0;
@@ -304,10 +349,10 @@ float LinuxParser::CpuUtil(int pid) {
         count++;
       }
 
-      total = LinuxParser::UpTime(pid) + stoi(sysUptimeVect[14]) +
-              stoi(sysUptimeVect[15]) + stoi(sysUptimeVect[16]) +
-              stoi(sysUptimeVect[21]);
-      seconds = LinuxParser::UpTime() - (stof(sysUptimeVect[22]) / hertz);
+      total = LinuxParser::UpTime(pid) + stof(sysUptimeVect[14]) +
+              stof(sysUptimeVect[15]) + stof(sysUptimeVect[16]) +
+              stof(sysUptimeVect[21]);
+      seconds = LinuxParser::UpTime() - (stol(sysUptimeVect[22]) / hertz);
       cpuUsage = 100 * ((total / hertz) / seconds);
     }
   }

@@ -15,23 +15,19 @@ float Processor::Utilization() {
   float totalDelta;
   float idleDelta;
 
-  cpuVals = LinuxParser::CpuUtilization();
+  active = LinuxParser::ActiveJiffies();
+  idle = LinuxParser::IdleJiffies();
 
-  // if (prevTotal_ != 0) {
-    active = stof(cpuVals[0]);
-    idle = stof(cpuVals[1]);
+  prevTotal_ = prevActive_ + prevIdle_;
+  total = active + idle;
 
-    prevTotal_ = prevActive_ + prevIdle_;
-    total = active + idle;
+  totalDelta = total - prevTotal_;
+  idleDelta = idle - prevIdle_;
 
-    totalDelta = total - prevTotal_;
-    idleDelta = idle - prevIdle_;
+  cpuUtil = (totalDelta - idleDelta) / totalDelta;
 
-    cpuUtil = (totalDelta - idleDelta) / totalDelta;
-  // }
+  prevIdle_ = idle;
+  prevActive_ = active;
 
-  prevActive_ = stof(cpuVals[0]);
-  prevIdle_ = stof(cpuVals[1]);
-
-  return 0;
+  return cpuUtil;
 }
