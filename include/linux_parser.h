@@ -40,6 +40,10 @@ enum CPUStates {
   kGuest_,
   kGuestNice_
 };
+
+enum ProcUTIL { Utime_ = 13, Stime_, Cutime, Cstime, StartTime_ = 22 };
+
+
 std::vector<std::string> CpuUtilization();
 long Jiffies();
 long ActiveJiffies();
@@ -52,7 +56,7 @@ std::string Ram(int pid);
 std::string Uid(int pid);
 std::string User(int pid);
 long int UpTime(int pid);
-float CpuUtil(int pid); 
+float CpuUtil(int pid);
 };  // namespace LinuxParser
 
 #endif

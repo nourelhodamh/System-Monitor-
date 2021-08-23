@@ -17,10 +17,9 @@ float Processor::Utilization() {
 
   active = LinuxParser::ActiveJiffies();
   idle = LinuxParser::IdleJiffies();
+  total = LinuxParser::Jiffies();
 
   prevTotal_ = prevActive_ + prevIdle_;
-  total = active + idle;
-
   totalDelta = total - prevTotal_;
   idleDelta = idle - prevIdle_;
 
