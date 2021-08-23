@@ -2,6 +2,8 @@
 
 #include <dirent.h>
 #include <unistd.h>
+#include <iomanip> // for std::setprecision()
+
 
 #include <sstream>
 #include <string>
@@ -279,14 +281,15 @@ string LinuxParser::Command(int pid) {
 string LinuxParser::Ram(int pid) {
   string line;
   string key;
-  long pRam;
+  string pRam;
   std::ifstream ramStream(kProcDirectory + to_string(pid) + kStatusFilename);
   if (ramStream.is_open()) {
     while (std::getline(ramStream, line)) {
       std::stringstream lineStream(line);
       while (lineStream >> key >> pRam) {
         if (key == "VmSize:") {
-          return to_string(pRam / 1000);
+          std::setprecision(3);
+          return to_string(stol(pRam) / 1000);
         }
       }
     }
