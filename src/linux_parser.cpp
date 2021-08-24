@@ -34,6 +34,7 @@ string LinuxParser::OperatingSystem() {
       }
     }
   }
+  filestream.close();
   return value;
 }
 
@@ -46,6 +47,7 @@ string LinuxParser::Kernel() {
     std::istringstream linestream(line);
     linestream >> os >> version >> kernel;
   }
+  stream.close();
   return kernel;
 }
 
@@ -86,7 +88,7 @@ float LinuxParser::MemoryUtilization() {
       }
     }
   }
-
+  memoUtilStream.close();
   return (memtotal - memfree) / memtotal;
 }
 
@@ -95,19 +97,17 @@ long LinuxParser::UpTime() {
   string sysTimeValue;
   std::ifstream totalProcsStream(kProcDirectory + kUptimeFilename);
   if (totalProcsStream.is_open()) {
-    while (std::getline(totalProcsStream, line)) {
-      std::stringstream lineStream(line);
-      lineStream >> sysTimeValue;
-    }
+    std::getline(totalProcsStream, line);
+    std::stringstream lineStream(line);
+    lineStream >> sysTimeValue;
   }
+  totalProcsStream.close();
   return stol(sysTimeValue);
 }
 
 long LinuxParser::Jiffies() {
   return LinuxParser::ActiveJiffies() + LinuxParser::IdleJiffies();
 }
-
-long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
 
 long LinuxParser::ActiveJiffies() {
   string line;
@@ -144,6 +144,7 @@ long LinuxParser::ActiveJiffies() {
       active = userVal + niceVal + systemVal + irqVal + softIrqVal + stealVal;
     }
   }
+  utilStream.close();
   return active;
 }
 
@@ -156,10 +157,10 @@ long LinuxParser::IdleJiffies() {
   vector<string> idleCpuArgs{};
   int count = 0;
 
-  std::ifstream utilStream(LinuxParser::kProcDirectory +
+  std::ifstream idleStream(LinuxParser::kProcDirectory +
                            LinuxParser::kStatFilename);
-  if (utilStream.is_open()) {
-    while (std::getline(utilStream, line)) {
+  if (idleStream.is_open()) {
+    while (std::getline(idleStream, line)) {
       std::stringstream lineStream(line);
       while (lineStream >> key >> value) {
         if (key == "cpu") {
@@ -175,6 +176,7 @@ long LinuxParser::IdleJiffies() {
       idle = iowaitVal + idleVal;
     }
   }
+  idleStream.close();
   return idle;
 }
 
@@ -218,6 +220,7 @@ vector<string> LinuxParser::CpuUtilization() {
       cpuValues.push_back(to_string(idle));
     }
   }
+  utilStream.close();
   return cpuValues;
 }
 
@@ -236,7 +239,7 @@ int LinuxParser::TotalProcesses() {
       }
     }
   }
-
+  totalProcsStream.close();
   return 0;
 }
 
@@ -255,6 +258,7 @@ int LinuxParser::RunningProcesses() {
       }
     }
   }
+  runningProcsStream.close();
   return 0;
 }
 
@@ -271,6 +275,7 @@ string LinuxParser::Command(int pid) {
       }
     }
   }
+  commandStream.close();
   return string();
 }
 
@@ -283,14 +288,15 @@ string LinuxParser::Ram(int pid) {
     while (std::getline(ramStream, line)) {
       std::stringstream lineStream(line);
       while (lineStream >> key >> pRam) {
-        if (key == "VmSize:") {
-          std::setprecision(3);
+        if (key == "VmRSS:") {  // using "VmRSS" instead of "VmSize"(memory
+                                // usage) for exact physical memory being used as
+                                // a part of Physical RAM
           return to_string(stol(pRam) / 1000);
         }
       }
     }
   }
-
+  ramStream.close();
   return string();
 }
 
@@ -309,7 +315,7 @@ string LinuxParser::Uid(int pid) {
       }
     }
   }
-
+  uIdStream.close();
   return string();
 }
 
@@ -331,7 +337,7 @@ string LinuxParser::User(int pid) {
       }
     }
   }
-
+  userStream.close();
   return string();
 }
 
@@ -351,6 +357,7 @@ long LinuxParser::UpTime(int pid) {
       startTime = stol(pUpTime[21]);
     }
   }
+  pUpTimeStream.close();
   return sysTime - (startTime / sysconf(_SC_CLK_TCK));
 }
 
@@ -360,7 +367,6 @@ float LinuxParser::CpuUtil(int pid) {
   float total{0.0};
   float seconds;
   float cpuUsage{0.0};
-  int count = 0;
 
   float hertz = sysconf(_SC_CLK_TCK);
 
@@ -383,6 +389,8 @@ float LinuxParser::CpuUtil(int pid) {
     seconds = LinuxParser::UpTime(pid);
     cpuUsage = ((total / hertz) / seconds);
   }
-
+  pCpuSystemStream.close();
   return cpuUsage;
 }
+
+// long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
