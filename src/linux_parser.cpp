@@ -338,21 +338,19 @@ string LinuxParser::User(int pid) {
 long LinuxParser::UpTime(int pid) {
   string line;
   vector<string> pUpTime{};
-  int count = 0;
   long startTime{0};
   long sysTime = LinuxParser::UpTime();
+  string value;
   std::ifstream pUpTimeStream(kProcDirectory + to_string(pid) + kStatFilename);
   if (pUpTimeStream.is_open()) {
     while (std::getline(pUpTimeStream, line)) {
       std::stringstream lineStream(line);
-      while (count <= 21) {
-        pUpTime.push_back(line);
-        count++;
+      while (lineStream >> value) {
+        pUpTime.push_back(value);
       }
       startTime = stol(pUpTime[21]);
     }
   }
-
   return sysTime - (startTime / sysconf(_SC_CLK_TCK));
 }
 
@@ -375,20 +373,15 @@ float LinuxParser::CpuUtil(int pid) {
     while (std::getline(pCpuSystemStream, line)) {
       std::stringstream lineStream(line);
       while (lineStream >> value) {
-        while (count <= 22) {
-          sysUptimeVect.push_back(value);
-          count++;
-        }
+        sysUptimeVect.push_back(value);
       }
-
-      total = stof(sysUptimeVect[ProcUTIL::Cstime]) +
-              stof(sysUptimeVect[ProcUTIL::Cutime]) +
-              stof(sysUptimeVect[ProcUTIL::Stime_]) +
-              stof(sysUptimeVect[ProcUTIL::Utime_]);
-      seconds = LinuxParser::UpTime() -
-                (stol(sysUptimeVect[ProcUTIL::StartTime_]) / hertz);
-      cpuUsage = ((total / hertz) / seconds);
     }
+    total = stof(sysUptimeVect[ProcUTIL::Cstime]) +
+            stof(sysUptimeVect[ProcUTIL::Cutime]) +
+            stof(sysUptimeVect[ProcUTIL::Stime_]) +
+            stof(sysUptimeVect[ProcUTIL::Utime_]);
+    seconds = LinuxParser::UpTime(pid);
+    cpuUsage = ((total / hertz) / seconds);
   }
 
   return cpuUsage;
