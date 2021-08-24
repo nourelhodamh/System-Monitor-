@@ -2,9 +2,8 @@
 
 #include <dirent.h>
 #include <unistd.h>
-#include <iomanip> // for std::setprecision()
 
-
+#include <iomanip>  // for std::setprecision()
 #include <sstream>
 #include <string>
 #include <vector>
@@ -79,12 +78,11 @@ float LinuxParser::MemoryUtilization() {
   if (memoUtilStream.is_open()) {
     while (std::getline(memoUtilStream, line)) {
       std::stringstream lineStream(line);
-      while (lineStream >> key >> value) {
-        if (key == "MemTotal:") {
-          memtotal = value;
-        } else if (key == "MemFree:") {
-          memfree = value;
-        }
+      lineStream >> key >> value;
+      if (key == "MemTotal:") {
+        memtotal = value;
+      } else if (key == "MemFree:") {
+        memfree = value;
       }
     }
   }
@@ -94,17 +92,15 @@ float LinuxParser::MemoryUtilization() {
 
 long LinuxParser::UpTime() {
   string line;
-  long sysTimeValue;
+  string sysTimeValue;
   std::ifstream totalProcsStream(kProcDirectory + kUptimeFilename);
   if (totalProcsStream.is_open()) {
     while (std::getline(totalProcsStream, line)) {
       std::stringstream lineStream(line);
-      while (lineStream >> sysTimeValue) {
-        return sysTimeValue;
-      }
+      lineStream >> sysTimeValue;
     }
   }
-  return sysTimeValue;
+  return stol(sysTimeValue);
 }
 
 long LinuxParser::Jiffies() {
@@ -356,7 +352,8 @@ long LinuxParser::UpTime(int pid) {
       startTime = stol(pUpTime[21]);
     }
   }
-  return (sysTime - startTime) / sysconf(_SC_CLK_TCK);
+
+  return sysTime - (startTime / sysconf(_SC_CLK_TCK));
 }
 
 float LinuxParser::CpuUtil(int pid) {
@@ -390,7 +387,7 @@ float LinuxParser::CpuUtil(int pid) {
               stof(sysUptimeVect[ProcUTIL::Utime_]);
       seconds = LinuxParser::UpTime() -
                 (stol(sysUptimeVect[ProcUTIL::StartTime_]) / hertz);
-      cpuUsage = 100 * ((total / hertz) / seconds);
+      cpuUsage = ((total / hertz) / seconds);
     }
   }
 
